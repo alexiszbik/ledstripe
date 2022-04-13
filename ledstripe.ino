@@ -4,6 +4,9 @@
 
 #include <MIDI.h>
 
+#define MIDI_CHANNEL 13
+#define CC 3
+
 MIDI_CREATE_DEFAULT_INSTANCE();
  
 #define REDPIN 5
@@ -13,80 +16,107 @@ MIDI_CREATE_DEFAULT_INSTANCE();
 #define REDNOTE 60
 #define GREENNOTE 61
 #define BLUENOTE 62
- 
-#define FADESPEED 5     // make this higher to slow down
+
+unsigned long decayTime = 1;
+
+struct ColorStatus {
+  int level = 0;
+  byte fullLevel = 0;
+  bool isOn = false;
+  unsigned long timeStamp = 0;
+  byte pin;
+};
+
+enum Color {
+  red = 0,
+  green,
+  blue,
+
+  count
+};
+
+ColorStatus colorStatus[count];
+unsigned long timePassed;
  
 void setup() {
   pinMode(REDPIN, OUTPUT);
   pinMode(GREENPIN, OUTPUT);
   pinMode(BLUEPIN, OUTPUT);
 
+  colorStatus[red].pin = REDPIN;
+  colorStatus[green].pin = GREENPIN;
+  colorStatus[blue].pin = BLUEPIN;
+
   MIDI.setHandleNoteOn(handleNoteOn);
   MIDI.setHandleNoteOff(handleNoteOff);
-  MIDI.begin(MIDI_CHANNEL_OMNI);
+  MIDI.setHandleControlChange(handleControlChange);
+  MIDI.begin(MIDI_CHANNEL);
+
+  for (byte c = 0; c < count; c++) {
+    analogWrite(colorStatus[c].pin, 0);
+  }
 }
- 
  
 void loop() {
   MIDI.read();
 
- /*
-  // fade from blue to violet
-  for (r = 0; r < 256; r++) { 
-    analogWrite(REDPIN, r);
-    delay(FADESPEED);
-  } 
-  // fade from violet to red
-  for (b = 255; b > 0; b--) { 
-    analogWrite(BLUEPIN, b);
-    delay(FADESPEED);
-  } 
-  // fade from red to yellow
-  for (g = 0; g < 256; g++) { 
-    analogWrite(GREENPIN, g);
-    delay(FADESPEED);
-  } 
-  // fade from yellow to green
-  for (r = 255; r > 0; r--) { 
-    analogWrite(REDPIN, r);
-    delay(FADESPEED);
-  } 
-  // fade from green to teal
-  for (b = 0; b < 256; b++) { 
-    analogWrite(BLUEPIN, b);
-    delay(FADESPEED);
-  } 
-  // fade from teal to blue
-  for (g = 255; g > 0; g--) { 
-    analogWrite(GREENPIN, g);
-    delay(FADESPEED);
+  timePassed = millis();
+  
+  for (byte c = 0; c < count; c++) {
+    if (!colorStatus[c].isOn && colorStatus[c].level >= 0) {
+      unsigned long decay = timePassed - colorStatus[c].timeStamp;
+      double ratio = ((double)decay)/decayTime;
+      colorStatus[c].level = colorStatus[c].fullLevel - round(ratio*((double)colorStatus[c].fullLevel));
+      analogWrite(colorStatus[c].pin, colorStatus[c].level > 0 ? colorStatus[c].level : 0);
+    }
   }
-  */
+  
+}
 
+byte toLevel(byte velocity) {
+   return velocity <= 1 ? 0 : velocity*2 + 1;
 }
 
 void handleNoteOn(byte channel, byte note, byte velocity) {
-  byte level = velocity <= 1 ? 0 : velocity*2 + 1;
+  byte level = toLevel(velocity);
+  bool isOn = level >= 1;
+
+  Color color;
   
   if (note == REDNOTE) {
-    analogWrite(REDPIN, level);
+    color = red;
   }
   if (note == GREENNOTE) {
-    analogWrite(GREENPIN, level);
+    color = green;
   }
   if (note == BLUENOTE) {
-    analogWrite(BLUEPIN, level);
+    color = blue;
   }
+  
+  analogWrite(colorStatus[color].pin, level);
+  colorStatus[color].level = level;
+  colorStatus[color].fullLevel = level;
+  colorStatus[color].isOn = isOn;
 }
 
 void handleNoteOff(byte channel, byte note, byte velocity) {
-  if (note == REDNOTE) {
-    analogWrite(REDPIN, 0);
+  Color color;
+   if (note == REDNOTE) {
+    color = red;
   }
   if (note == GREENNOTE) {
-    analogWrite(GREENPIN, 0);
+    color = green;
   }
   if (note == BLUENOTE) {
-    analogWrite(BLUEPIN, 0);
+    color = blue;
+  }
+  colorStatus[color].isOn = false;
+  colorStatus[color].timeStamp = timePassed;
+}
+
+void handleControlChange(byte channel, byte control, byte value) {
+  if (control == CC) {
+    double ratio = ((double)value)/127.0;
+    decayTime = 1 + pow(ratio,2) * 3000;
   }
 }
