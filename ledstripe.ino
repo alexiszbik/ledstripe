@@ -86,11 +86,13 @@ void handleNoteOn(byte channel, byte note, byte velocity) {
   if (note == REDNOTE) {
     color = red;
   }
-  if (note == GREENNOTE) {
+  else if (note == GREENNOTE) {
     color = green;
   }
-  if (note == BLUENOTE) {
+  else if (note == BLUENOTE) {
     color = blue;
+  } else {
+    return;
   }
   
   analogWrite(colorStatus[color].pin, level);
@@ -101,15 +103,18 @@ void handleNoteOn(byte channel, byte note, byte velocity) {
 
 void handleNoteOff(byte channel, byte note, byte velocity) {
   Color color;
-   if (note == REDNOTE) {
+  if (note == REDNOTE) {
     color = red;
   }
-  if (note == GREENNOTE) {
+  else if (note == GREENNOTE) {
     color = green;
   }
-  if (note == BLUENOTE) {
+  else if (note == BLUENOTE) {
     color = blue;
+  } else {
+    return;
   }
+  
   colorStatus[color].isOn = false;
   colorStatus[color].timeStamp = timePassed;
 }
