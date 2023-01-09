@@ -23,6 +23,7 @@ unsigned long decayTime = 1;
 unsigned long rainbowTS = 0;
 unsigned long rainbowTime = 1;
 bool rainbowStatus = false;
+bool needsToClearColors = false;
 
 typedef struct {
     float r;       // a fraction between 0 and 1
@@ -156,6 +157,16 @@ void loop() {
       analogWrite(colorStatus[c].pin, colorStatus[c].level > 0 ? colorStatus[c].level : 0);
     }
   } else {
+    if (needsToClearColors) {
+      colorStatus[0].level = -1;
+      colorStatus[1].level = -1;
+      colorStatus[2].level = -1;
+      for (byte c = 0; c < count; c++) {
+        analogWrite(colorStatus[c].pin, 0);
+      }
+      needsToClearColors = false;
+    }
+      
     for (byte c = 0; c < count; c++) {
       if (!colorStatus[c].isOn && colorStatus[c].level >= 0) {
         unsigned long decay = timePassed - colorStatus[c].timeStamp;
@@ -213,9 +224,7 @@ void handleNoteOff(byte channel, byte note, byte velocity) {
   } else {
     if (note == RAINBOWNOTE) {
       rainbowStatus = false;
-      colorStatus[0].level = 0;
-      colorStatus[1].level = 0;
-      colorStatus[2].level = 0;
+      needsToClearColors = true;
     }
     return;
   }
