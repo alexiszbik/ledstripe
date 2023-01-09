@@ -213,6 +213,9 @@ void handleNoteOff(byte channel, byte note, byte velocity) {
   } else {
     if (note == RAINBOWNOTE) {
       rainbowStatus = false;
+      colorStatus[0].level = 0;
+      colorStatus[1].level = 0;
+      colorStatus[2].level = 0;
     }
     return;
   }
