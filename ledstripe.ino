@@ -3,16 +3,22 @@
 // public domain, enjoy!
 
 #include <MIDI.h>
+#include <Wire.h>
+#include "LEDStatus.h"
 
 #define MIDI_CHANNEL 13
-#define CC 3
-#define RAINBOWSPEED 4
+#define CC_SPEED 3
+#define CC_RAINBOWSPEED 4
 
 MIDI_CREATE_DEFAULT_INSTANCE();
  
-#define REDPIN 5
-#define GREENPIN 6
-#define BLUEPIN 3
+#define REDPIN 9
+#define GREENPIN 10
+#define BLUEPIN 11
+
+#define REDPIN_B 5
+#define GREENPIN_B 6
+#define BLUEPIN_B 3
 
 #define REDNOTE 60
 #define GREENNOTE 61
@@ -95,14 +101,6 @@ rgb hsv2rgb(hsv in)
     return out;     
 }
 
-struct ColorStatus {
-  int level = 0;
-  byte fullLevel = 0;
-  bool isOn = false;
-  unsigned long timeStamp = 0;
-  byte pin;
-};
-
 enum Color {
   red = 0,
   green,
@@ -111,7 +109,7 @@ enum Color {
   count
 };
 
-ColorStatus colorStatus[count];
+LEDStatus colorStatus[count];
 unsigned long timePassed;
  
 void setup() {
@@ -119,9 +117,13 @@ void setup() {
   pinMode(GREENPIN, OUTPUT);
   pinMode(BLUEPIN, OUTPUT);
 
-  colorStatus[red].pin = REDPIN;
-  colorStatus[green].pin = GREENPIN;
-  colorStatus[blue].pin = BLUEPIN;
+  colorStatus[red].pinA = REDPIN;
+  colorStatus[green].pinA = GREENPIN;
+  colorStatus[blue].pinA = BLUEPIN;
+
+  colorStatus[red].pinB = REDPIN_B;
+  colorStatus[green].pinB = GREENPIN_B;
+  colorStatus[blue].pinB = BLUEPIN_B;
 
   MIDI.setHandleNoteOn(handleNoteOn);
   MIDI.setHandleNoteOff(handleNoteOff);
@@ -129,8 +131,11 @@ void setup() {
   MIDI.begin(MIDI_CHANNEL);
 
   for (byte c = 0; c < count; c++) {
-    analogWrite(colorStatus[c].pin, 0);
+    analogWrite(colorStatus[c].pinA, 0);
+    analogWrite(colorStatus[c].pinB, 0);
   }
+
+  Wire.begin(); 
 }
 
 int hue = 0;
@@ -143,8 +148,6 @@ void loop() {
     hue = (hue + 2) % 360;
   }
 
-  
-
   timePassed = millis();
 
   if (rainbowStatus) {
@@ -154,7 +157,7 @@ void loop() {
     colorStatus[2].level = rgbColor.b * 255;
 
     for (byte c = 0; c < count; c++) {
-      analogWrite(colorStatus[c].pin, colorStatus[c].level > 0 ? colorStatus[c].level : 0);
+      analogWrite(colorStatus[c].pinA, colorStatus[c].level > 0 ? colorStatus[c].level : 0);
     }
   } else {
     if (needsToClearColors) {
@@ -162,7 +165,8 @@ void loop() {
       colorStatus[1].level = -1;
       colorStatus[2].level = -1;
       for (byte c = 0; c < count; c++) {
-        analogWrite(colorStatus[c].pin, 0);
+        analogWrite(colorStatus[c].pinA, 0);
+        analogWrite(colorStatus[c].pinB, 0);
       }
       needsToClearColors = false;
     }
@@ -172,13 +176,12 @@ void loop() {
         unsigned long decay = timePassed - colorStatus[c].timeStamp;
         double ratio = ((double)decay)/decayTime;
         colorStatus[c].level = colorStatus[c].fullLevel - round(ratio*((double)colorStatus[c].fullLevel));
-        analogWrite(colorStatus[c].pin, colorStatus[c].level > 0 ? colorStatus[c].level : 0);
+        analogWrite(colorStatus[c].pinA, colorStatus[c].level > 0 ? colorStatus[c].level : 0);
+        analogWrite(colorStatus[c].pinB, colorStatus[c].level > 0 ? colorStatus[c].level : 0);
       }
     }
   }
 }
-
-
 
 byte toLevel(byte velocity) {
    return velocity <= 1 ? 0 : velocity*2 + 1;
@@ -205,10 +208,18 @@ void handleNoteOn(byte channel, byte note, byte velocity) {
     return;
   }
   
-  analogWrite(colorStatus[color].pin, level);
+  analogWrite(colorStatus[color].pinA, level);
+  analogWrite(colorStatus[color].pinB, level);
   colorStatus[color].level = level;
   colorStatus[color].fullLevel = level;
   colorStatus[color].isOn = isOn;
+
+  Wire.beginTransmission(9);
+  byte buffer[2];
+  buffer[0] = note;
+  buffer[1] = 127;
+  Wire.write( buffer, 2);
+  Wire.endTransmission(); 
 }
 
 void handleNoteOff(byte channel, byte note, byte velocity) {
@@ -231,14 +242,21 @@ void handleNoteOff(byte channel, byte note, byte velocity) {
   
   colorStatus[color].isOn = false;
   colorStatus[color].timeStamp = timePassed;
+
+  Wire.beginTransmission(9);
+  byte buffer[2];
+  buffer[0] = note;
+  buffer[1] = 0;
+  Wire.write(buffer, 2);
+  Wire.endTransmission(); 
 }
 
 void handleControlChange(byte channel, byte control, byte value) {
-  if (control == CC) {
+  if (control == CC_SPEED) {
     double ratio = ((double)value)/127.0;
     decayTime = 1 + pow(ratio,2) * 3000;
   }
-  if (control == RAINBOWSPEED) {
+  if (control == CC_RAINBOWSPEED) {
     rainbowTime = 1 + value;
   }
 }
