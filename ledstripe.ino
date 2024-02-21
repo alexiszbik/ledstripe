@@ -10,12 +10,14 @@
 #define CC_SPEED 3
 #define CC_RAINBOWSPEED 4
 
+#define NOTE_START 68
+
 MIDI_CREATE_DEFAULT_INSTANCE();
 
 StripeEngine stripeEngine;
  
 void setup() {
-  stripeEngine.setup();
+  stripeEngine.setup(NOTE_START);
 
   MIDI.setHandleNoteOn(handleNoteOn);
   MIDI.setHandleNoteOff(handleNoteOff);
@@ -31,33 +33,36 @@ void loop() {
   stripeEngine.loop();
 }
 
+void transmit(byte canal, byte dataA, byte dataB) {
+  Wire.beginTransmission(9);
+  byte buffer[3];
+  buffer[0] = canal;
+  buffer[1] = dataA;
+  buffer[2] = dataB;
+  Wire.write(buffer, 3);
+  Wire.endTransmission(); 
+}
+
 void handleNoteOn(byte channel, byte note, byte velocity) {
   stripeEngine.setColor(note, velocity);
 
-  Wire.beginTransmission(9);
-  byte buffer[2];
-  buffer[0] = note;
-  buffer[1] = 127;
-  Wire.write( buffer, 2);
-  Wire.endTransmission(); 
+  transmit(0, note, velocity);
 }
 
 void handleNoteOff(byte channel, byte note, byte velocity) {
   stripeEngine.setColor(note, 0);
 
-  Wire.beginTransmission(9);
-  byte buffer[2];
-  buffer[0] = note;
-  buffer[1] = 0;
-  Wire.write(buffer, 2);
-  Wire.endTransmission(); 
+  transmit(0, note, 0);
 }
 
 void handleControlChange(byte channel, byte control, byte value) {
+
   if (control == CC_SPEED) {
     stripeEngine.setDecayTime(value);
+    transmit(1, control, value);
   }
   if (control == CC_RAINBOWSPEED) {
     stripeEngine.setRainbowTime(value);
+    transmit(1, control, value);
   }
 }

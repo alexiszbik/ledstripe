@@ -13,30 +13,20 @@
 #define BLUEPIN_B 3
 
 #define REDNOTE_ALL 60
-#define GREENNOTE_ALL 61
-#define BLUENOTE_ALL 62
-
-#define REDNOTE 68
-#define GREENNOTE 69
-#define BLUENOTE 70
-
-#define REDNOTE_B 72
-#define GREENNOTE_B 73
-#define BLUENOTE_B 74
 
 #define RAINBOWNOTE 63
 
 class StripeEngine {
 public:
 
-  void setup() {
-    colorStatus[red].init(REDPIN, REDNOTE, REDNOTE_ALL);
-    colorStatus[green].init(GREENPIN, GREENNOTE, GREENNOTE_ALL);
-    colorStatus[blue].init(BLUEPIN, BLUENOTE, BLUENOTE_ALL);
+  void setup(byte redStart) {
+    colorStatus[red].init(REDPIN, redStart, REDNOTE_ALL);
+    colorStatus[green].init(GREENPIN, redStart + 1, REDNOTE_ALL + 1);
+    colorStatus[blue].init(BLUEPIN, redStart + 2, REDNOTE_ALL + 2);
 
-    colorStatus[Color::count + red].init(REDPIN_B, REDNOTE_B, REDNOTE_ALL);
-    colorStatus[Color::count + green].init(GREENPIN_B, GREENNOTE_B, GREENNOTE_ALL);
-    colorStatus[Color::count + blue].init(BLUEPIN_B, BLUENOTE_B, BLUENOTE_ALL);
+    colorStatus[Color::count + red].init(REDPIN_B, redStart + 4, REDNOTE_ALL);
+    colorStatus[Color::count + green].init(GREENPIN_B, redStart + 5, REDNOTE_ALL + 1);
+    colorStatus[Color::count + blue].init(BLUEPIN_B, redStart + 6, REDNOTE_ALL + 2);
   }
 
   void loop() {
@@ -95,7 +85,6 @@ public:
             } else {
               colorStatus[c].timeStamp = timePassed;
             }
-
             colorStatus[c].applyLevel();
           }
        }
