@@ -15,28 +15,16 @@
 #define REDNOTE 60
 #define GREENNOTE 61
 #define BLUENOTE 62
+
 #define RAINBOWNOTE 63
 
 class StripeEngine {
 public:
 
   void setup() {
-    pinMode(REDPIN, OUTPUT);
-    pinMode(GREENPIN, OUTPUT);
-    pinMode(BLUEPIN, OUTPUT);
-
-    colorStatus[red].pinA = REDPIN;
-    colorStatus[green].pinA = GREENPIN;
-    colorStatus[blue].pinA = BLUEPIN;
-
-    colorStatus[red].pinB = REDPIN_B;
-    colorStatus[green].pinB = GREENPIN_B;
-    colorStatus[blue].pinB = BLUEPIN_B;
-
-    for (byte c = 0; c < Color::count; c++) {
-      analogWrite(colorStatus[c].pinA, 0);
-      analogWrite(colorStatus[c].pinB, 0);
-    }
+    colorStatus[red].init(REDPIN, REDPIN_B, REDNOTE);
+    colorStatus[green].init(GREENPIN, GREENPIN_B, GREENNOTE);
+    colorStatus[blue].init(BLUEPIN, BLUEPIN_B, BLUENOTE);
   }
 
   void loop() {
@@ -53,28 +41,23 @@ public:
       colorStatus[1].level = rgbColor.g * 255;
       colorStatus[2].level = rgbColor.b * 255;
 
-      for (byte c = 0; c < count; c++) {
-        analogWrite(colorStatus[c].pinA, colorStatus[c].level > 0 ? colorStatus[c].level : 0);
+      for (byte c = 0; c < Color::count; c++) {
+        colorStatus[c].applyLevel();
       }
     } else {
       if (needsToClearColors) {
-        colorStatus[0].level = -1;
-        colorStatus[1].level = -1;
-        colorStatus[2].level = -1;
-        for (byte c = 0; c < count; c++) {
-          analogWrite(colorStatus[c].pinA, 0);
-          analogWrite(colorStatus[c].pinB, 0);
+        for (byte c = 0; c < Color::count; c++) {
+          colorStatus[c].clear();
         }
         needsToClearColors = false;
       }
         
-      for (byte c = 0; c < count; c++) {
+      for (byte c = 0; c < Color::count; c++) {
         if (!colorStatus[c].isOn && colorStatus[c].level >= 0) {
           unsigned long decay = timePassed - colorStatus[c].timeStamp;
           double ratio = ((double)decay)/decayTime;
           colorStatus[c].level = colorStatus[c].fullLevel - round(ratio*((double)colorStatus[c].fullLevel));
-          analogWrite(colorStatus[c].pinA, colorStatus[c].level > 0 ? colorStatus[c].level : 0);
-          analogWrite(colorStatus[c].pinB, colorStatus[c].level > 0 ? colorStatus[c].level : 0);
+          colorStatus[c].applyLevel();
         }
       }
     }
@@ -104,9 +87,6 @@ public:
       }
       return;
     }
-    
-    analogWrite(colorStatus[color].pinA, level);
-    analogWrite(colorStatus[color].pinB, level);
 
     colorStatus[color].isOn = isOn;
 
@@ -116,6 +96,8 @@ public:
     } else {
       colorStatus[color].timeStamp = timePassed;
     }
+
+    colorStatus[color].applyLevel();
   }
 
   byte toLevel(byte velocity) {
