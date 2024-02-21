@@ -12,9 +12,17 @@
 #define GREENPIN_B 6
 #define BLUEPIN_B 3
 
-#define REDNOTE 60
-#define GREENNOTE 61
-#define BLUENOTE 62
+#define REDNOTE_ALL 60
+#define GREENNOTE_ALL 61
+#define BLUENOTE_ALL 62
+
+#define REDNOTE 68
+#define GREENNOTE 69
+#define BLUENOTE 70
+
+#define REDNOTE_B 72
+#define GREENNOTE_B 73
+#define BLUENOTE_B 74
 
 #define RAINBOWNOTE 63
 
@@ -22,9 +30,13 @@ class StripeEngine {
 public:
 
   void setup() {
-    colorStatus[red].init(REDPIN, REDPIN_B, REDNOTE);
-    colorStatus[green].init(GREENPIN, GREENPIN_B, GREENNOTE);
-    colorStatus[blue].init(BLUEPIN, BLUEPIN_B, BLUENOTE);
+    colorStatus[red].init(REDPIN, REDNOTE, REDNOTE_ALL);
+    colorStatus[green].init(GREENPIN, GREENNOTE, GREENNOTE_ALL);
+    colorStatus[blue].init(BLUEPIN, BLUENOTE, BLUENOTE_ALL);
+
+    colorStatus[Color::count + red].init(REDPIN_B, REDNOTE_B, REDNOTE_ALL);
+    colorStatus[Color::count + green].init(GREENPIN_B, GREENNOTE_B, GREENNOTE_ALL);
+    colorStatus[Color::count + blue].init(BLUEPIN_B, BLUENOTE_B, BLUENOTE_ALL);
   }
 
   void loop() {
@@ -37,22 +49,26 @@ public:
 
     if (rainbowStatus) {
       rgb rgbColor = hsv2rgb({hue,1,1});
-      colorStatus[0].level = rgbColor.r * 255;
-      colorStatus[1].level = rgbColor.g * 255;
-      colorStatus[2].level = rgbColor.b * 255;
+      colorStatus[red].level = rgbColor.r * 255;
+      colorStatus[green].level = rgbColor.g * 255;
+      colorStatus[blue].level = rgbColor.b * 255;
 
-      for (byte c = 0; c < Color::count; c++) {
+      colorStatus[Color::count + red].level = rgbColor.r * 255;
+      colorStatus[Color::count + green].level = rgbColor.g * 255;
+      colorStatus[Color::count + blue].level = rgbColor.b * 255;
+
+      for (byte c = 0; c < ledCount; c++) {
         colorStatus[c].applyLevel();
       }
     } else {
       if (needsToClearColors) {
-        for (byte c = 0; c < Color::count; c++) {
+        for (byte c = 0; c < ledCount; c++) {
           colorStatus[c].clear();
         }
         needsToClearColors = false;
       }
         
-      for (byte c = 0; c < Color::count; c++) {
+      for (byte c = 0; c < ledCount; c++) {
         colorStatus[c].decayAndApply(timePassed, decayTime);
       }
     }
@@ -63,36 +79,27 @@ public:
     byte level = toLevel(velocity);
     bool isOn = level >= 1;
 
-    Color color;
-
-    if (note == REDNOTE) {
-      color = red;
-    }
-    else if (note == GREENNOTE) {
-      color = green;
-    }
-    else if (note == BLUENOTE) {
-      color = blue;
-    } else {
-      if (note == RAINBOWNOTE) {
-        rainbowStatus = isOn;
-        if (!isOn) {
-          needsToClearColors = true;
-        }
+    if (note == RAINBOWNOTE) {
+      rainbowStatus = isOn;
+      if (!isOn) {
+        needsToClearColors = true;
       }
       return;
-    }
-
-    colorStatus[color].isOn = isOn;
-
-    if (isOn) {
-      colorStatus[color].level = level;
-      colorStatus[color].fullLevel = level;
     } else {
-      colorStatus[color].timeStamp = timePassed;
-    }
+       for (byte c = 0; c < ledCount; c++) {
+          if (colorStatus[c].note == note || colorStatus[c].noteAll == note) {
+            colorStatus[c].isOn = isOn;
+            if (isOn) {
+              colorStatus[c].level = level;
+              colorStatus[c].fullLevel = level;
+            } else {
+              colorStatus[c].timeStamp = timePassed;
+            }
 
-    colorStatus[color].applyLevel();
+            colorStatus[c].applyLevel();
+          }
+       }
+    }
   }
 
   byte toLevel(byte velocity) {
@@ -119,6 +126,6 @@ private:
 
   static const int ledCount = Color::count * 2;
 
-  LEDStatus colorStatus[Color::count];
+  LEDStatus colorStatus[ledCount];
 
 };

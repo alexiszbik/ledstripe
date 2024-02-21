@@ -2,27 +2,23 @@
 
 struct LEDStatus {
 public:
-  void init(byte pinA, byte pinB, byte note) {
-    this->pinA = pinA;
-    this->pinB = pinB;
+  void init(byte pin, byte note, byte noteAll) {
+    this->pin = pin;
     this->note = note;
+    this->noteAll = noteAll;
 
-    pinMode(pinA, OUTPUT);
-    pinMode(pinB, OUTPUT);
+    pinMode(pin, OUTPUT);
 
-    analogWrite(pinA, 0);
-    analogWrite(pinB, 0);
+    analogWrite(pin, 0);
   }
 
   void clear() {
     level = -1;
-    analogWrite(pinA, 0);
-    analogWrite(pinB, 0);
+    analogWrite(pin, 0);
   }
 
   void applyLevel() {
-    analogWrite(pinA, level > 0 ? level : 0);
-    analogWrite(pinB, level > 0 ? level : 0);
+    analogWrite(pin, level > 0 ? level : 0);
   }
 
   void decayAndApply(unsigned long timePassed, unsigned long decayTime) {
@@ -35,9 +31,9 @@ public:
   }
 
 public:
-  byte pinA;
-  byte pinB;
+  byte pin;
   byte note;
+  byte noteAll;
 
   int level = 0;
   byte fullLevel = 0;
