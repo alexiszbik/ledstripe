@@ -25,6 +25,15 @@ public:
     analogWrite(pinB, level > 0 ? level : 0);
   }
 
+  void decayAndApply(unsigned long timePassed, unsigned long decayTime) {
+    if (!isOn && level >= 0) {
+      unsigned long decay = timePassed - timeStamp;
+      double ratio = ((double)decay)/decayTime;
+      level = fullLevel - round(ratio*((double)fullLevel));
+      applyLevel();
+    }
+  }
+
 public:
   byte pinA;
   byte pinB;

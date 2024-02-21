@@ -53,12 +53,7 @@ public:
       }
         
       for (byte c = 0; c < Color::count; c++) {
-        if (!colorStatus[c].isOn && colorStatus[c].level >= 0) {
-          unsigned long decay = timePassed - colorStatus[c].timeStamp;
-          double ratio = ((double)decay)/decayTime;
-          colorStatus[c].level = colorStatus[c].fullLevel - round(ratio*((double)colorStatus[c].fullLevel));
-          colorStatus[c].applyLevel();
-        }
+        colorStatus[c].decayAndApply(timePassed, decayTime);
       }
     }
   }
@@ -69,7 +64,7 @@ public:
     bool isOn = level >= 1;
 
     Color color;
-    
+
     if (note == REDNOTE) {
       color = red;
     }
@@ -121,6 +116,8 @@ private:
   unsigned long rainbowTime = 1;
   bool rainbowStatus = false;
   bool needsToClearColors = false;
+
+  static const int ledCount = Color::count * 2;
 
   LEDStatus colorStatus[Color::count];
 
