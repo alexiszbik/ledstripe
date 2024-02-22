@@ -6,7 +6,7 @@
 #include <Wire.h>
 #include "StripeEngine.h"
 
-#define MIDI_CHANNEL 13
+#define MIDI_CHANNEL 10
 #define CC_SPEED 3
 #define CC_RAINBOWSPEED 4
 
