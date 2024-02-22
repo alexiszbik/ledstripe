@@ -2,10 +2,12 @@
 
 struct LEDStatus {
 public:
-  void init(byte pin, byte note, byte noteAll) {
+  void init(byte pin, byte note, byte noteAll, byte noteWhite, byte noteWhiteAll) {
     this->pin = pin;
     this->note = note;
     this->noteAll = noteAll;
+    this->noteWhite = noteWhite;
+    this->noteWhiteAll = noteWhiteAll;
 
     pinMode(pin, OUTPUT);
 
@@ -34,6 +36,8 @@ public:
   byte pin;
   byte note;
   byte noteAll;
+  byte noteWhite;
+  byte noteWhiteAll;
 
   int level = 0;
   byte fullLevel = 0;

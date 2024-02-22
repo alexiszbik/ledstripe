@@ -14,19 +14,20 @@
 
 #define REDNOTE_ALL 60
 
-#define RAINBOWNOTE 63
+#define RAINBOWNOTE 58
 
 class StripeEngine {
 public:
 
   void setup(byte redStart) {
-    colorStatus[red].init(REDPIN, redStart, REDNOTE_ALL);
-    colorStatus[green].init(GREENPIN, redStart + 1, REDNOTE_ALL + 1);
-    colorStatus[blue].init(BLUEPIN, redStart + 2, REDNOTE_ALL + 2);
+    byte whiteAll = REDNOTE_ALL + 3;
+    colorStatus[red].init(REDPIN, redStart, REDNOTE_ALL, redStart + 3, whiteAll);
+    colorStatus[green].init(GREENPIN, redStart + 1, REDNOTE_ALL + 1, redStart + 3, whiteAll);
+    colorStatus[blue].init(BLUEPIN, redStart + 2, REDNOTE_ALL + 2, redStart + 3, whiteAll);
 
-    colorStatus[Color::count + red].init(REDPIN_B, redStart + 4, REDNOTE_ALL);
-    colorStatus[Color::count + green].init(GREENPIN_B, redStart + 5, REDNOTE_ALL + 1);
-    colorStatus[Color::count + blue].init(BLUEPIN_B, redStart + 6, REDNOTE_ALL + 2);
+    colorStatus[Color::count + red].init(REDPIN_B, redStart + 4, REDNOTE_ALL, redStart + 7, whiteAll);
+    colorStatus[Color::count + green].init(GREENPIN_B, redStart + 5, REDNOTE_ALL + 1, redStart + 7, whiteAll);
+    colorStatus[Color::count + blue].init(BLUEPIN_B, redStart + 6, REDNOTE_ALL + 2, redStart + 7, whiteAll);
   }
 
   void loop() {
@@ -77,7 +78,7 @@ public:
       return;
     } else {
        for (byte c = 0; c < ledCount; c++) {
-          if (colorStatus[c].note == note || colorStatus[c].noteAll == note) {
+          if (colorStatus[c].note == note || colorStatus[c].noteAll == note || colorStatus[c].noteWhite == note || colorStatus[c].noteWhiteAll == note) {
             colorStatus[c].isOn = isOn;
             if (isOn) {
               colorStatus[c].level = level;
