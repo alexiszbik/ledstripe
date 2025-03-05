@@ -32,6 +32,17 @@ public:
     }
   }
 
+  void update(bool status, int level, unsigned long timePassed) {
+    this->isOn = status;
+    if (status) {
+      this->level = level;
+      this->fullLevel = level;
+    } else {
+      this->timeStamp = timePassed;
+    }
+    applyLevel();
+  }
+
 public:
   byte pin;
   byte note;
